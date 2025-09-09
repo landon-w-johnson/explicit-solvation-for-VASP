@@ -14,7 +14,7 @@
 
 1. Run `python addExplicitSolvent.py`.
 
-1. While `addExplicitSolvent.py` is running, you will be prompted to enter the density of your solvent in grams per mililiter.
+1. While `addExplicitSolvent.py` is running, you will be prompted to enter the density of your solvent in grams per mililiter. All other outputs are for debugging purposes.
 
 1. After `addExplicitSolvent.py` is done running, you will have a new file called `POSCAR_WITH_SOLVENT` that contains your original molecule surrounded by randomly oriented solvent molecules at approximately your desired density. This file is ready for VASP.
 
