@@ -78,6 +78,31 @@ print('scaled lattice vector lengths:')
 print(sc_lat_vec_len)
 print()
 
+from_poscar_mat = np.zeros((3,3), dtype=np.double)
+from_poscar_mat[:,0] = sc_lat_vec[0,:]
+from_poscar_mat[:,1] = sc_lat_vec[1,:]
+from_poscar_mat[:,2] = sc_lat_vec[2,:]
+print('from_poscar_mat:')
+print(from_poscar_mat)
+print()
+det_from_poscar_mat = from_poscar_mat[0,0]*(from_poscar_mat[1,1]*from_poscar_mat[2,2]-from_poscar_mat[1,2]*from_poscar_mat[2,1])\
+    + from_poscar_mat[0,1]*(from_poscar_mat[1,2]*from_poscar_mat[2,0]-from_poscar_mat[1,0]*from_poscar_mat[2,2])\
+    + from_poscar_mat[0,2]*(from_poscar_mat[1,0]*from_poscar_mat[2,1]-from_poscar_mat[1,1]*from_poscar_mat[2,0])
+print('determinant of from_poscar_mat:')
+print(det_from_poscar_mat)
+print()
+to_poscar_mat = np.zeros((3,3), dtype=np.double)
+to_poscar_mat[0,:] = np.cross(from_poscar_mat[:,1],from_poscar_mat[:,2])
+to_poscar_mat[1,:] = np.cross(from_poscar_mat[:,2],from_poscar_mat[:,0])
+to_poscar_mat[2,:] = np.cross(from_poscar_mat[:,0],from_poscar_mat[:,1])
+print('to_poscar_mat before dividing by determinant:')
+print(to_poscar_mat)
+print()
+to_poscar_mat = np.divide(to_poscar_mat,det_from_poscar_mat)
+print('to_poscar_mat after dividing by determinant:')
+print(to_poscar_mat)
+print()
+
 current_line = 5
 species_names = []
 ions_per_species = re.split(' +', poscar[current_line].lstrip().rstrip())
@@ -137,6 +162,17 @@ print('ion positions:')
 print(ion_positions)
 print()
 
+car_ion_pos = np.zeros((num_ions,3), dtype=np.double)
+if coord_scheme == 'Direct':
+    for i in range(num_ions):
+        car_ion_pos[i,:] = np.matmul(from_poscar_mat,ion_positions[i,:])
+else:
+    for i in range(num_ions):
+        car_ion_pos[i,:] = np.multiply(ion_positions[i,:],sc_fac)
+print('ion positions in standard Cartesian reference frame:')
+print(car_ion_pos)
+print()
+
 tot_vol = np.double(lat_lens[0]*sc_fac[0]*lat_lens[1]*sc_fac[1]*lat_lens[2]*sc_fac[2])
 print('tot_vol:')
 print(tot_vol)
@@ -184,6 +220,7 @@ for i in range(3):
 print('solvent lattice vectors:')
 print(sol_lat_vec)
 print()
+
 sol_lat_lens = np.zeros(3, dtype=np.double)
 for i in range(3):
     sol_lat_lens[i] = np.sqrt(sol_lat_vec[i,0]**2 + sol_lat_vec[i,1]**2 + sol_lat_vec[i,2]**2)
@@ -195,6 +232,28 @@ if float(sol_scaling_factor[0]) < 0:
     print('solvent scaling factor:')
     print(sol_actual_sc_fac)
     print()
+
+sol_sc_lat_vec = np.array(sol_lat_vec)
+sol_sc_lat_vec_len = np.zeros(3, dtype=np.double)
+for i in range(3):
+    sol_sc_lat_vec[i,0] *= sol_sc_fac[i]
+    sol_sc_lat_vec[i,1] *= sol_sc_fac[i]
+    sol_sc_lat_vec[i,2] *= sol_sc_fac[i]
+    sol_sc_lat_vec_len[i] = math.sqrt(sol_sc_lat_vec[i,0]**2+sol_sc_lat_vec[i,1]**2+sol_sc_lat_vec[i,2]**2)
+print('solvent scaled lattice vectors:')
+print(sol_sc_lat_vec)
+print()
+print('solvent scaled lattice vector lengths:')
+print(sol_sc_lat_vec_len)
+print()
+
+from_solvent_mat = np.zeros((3,3), dtype=np.double)
+from_solvent_mat[:,0] = sol_sc_lat_vec[0,:]
+from_solvent_mat[:,1] = sol_sc_lat_vec[1,:]
+from_solvent_mat[:,2] = sol_sc_lat_vec[2,:]
+print('from_solvent_mat:')
+print(from_solvent_mat)
+print()
 
 sol_current_line = 5
 sol_species_names = []
@@ -257,27 +316,13 @@ sol_sc_ion_pos = np.array(sol_ion_positions, dtype=np.double)
 sol_center_pos = np.zeros(3, dtype=np.double)
 if sol_coord_scheme == 'Direct':
     for i in range(sol_ion_positions.shape[0]):
-        sol_sc_ion_pos[i,0] = sol_ion_positions[i,0]*sol_sc_fac[0]*sol_lat_vec[0,0]\
-            + sol_ion_positions[i,1]*sol_sc_fac[1]*sol_lat_vec[1,0]\
-            + sol_ion_positions[i,2]*sol_sc_fac[2]*sol_lat_vec[2,0]
-        sol_center_pos[0] += sol_sc_ion_pos[i,0]
-        sol_sc_ion_pos[i,1] = sol_ion_positions[i,0]*sol_sc_fac[0]*sol_lat_vec[0,1]\
-            + sol_ion_positions[i,1]*sol_sc_fac[1]*sol_lat_vec[1,1]\
-            + sol_ion_positions[i,2]*sol_sc_fac[2]*sol_lat_vec[2,1]
-        sol_center_pos[1] += sol_sc_ion_pos[i,1]
-        sol_sc_ion_pos[i,2] = sol_ion_positions[i,0]*sol_sc_fac[0]*sol_lat_vec[0,2]\
-            + sol_ion_positions[i,1]*sol_sc_fac[1]*sol_lat_vec[1,2]\
-            + sol_ion_positions[i,2]*sol_sc_fac[2]*sol_lat_vec[2,2]
-        sol_center_pos[2] += sol_sc_ion_pos[i,2]
+        sol_sc_ion_pos[i,:] = np.matmul(from_solvent_mat,sol_ion_positions[i,:])
+        sol_center_pos = np.add(sol_center_pos,sol_sc_ion_pos[i,:])
 else: # Cartesian
     print('WARNING! The Cartesian scaling code block has not been tested or debugged!')
     for i in range(sol_ion_positions.shape[0]):
-        sol_sc_ion_pos[i,0] = sol_ion_positions[i,0]*sol_sc_fac[0]
-        sol_center_pos[0] += sol_sc_ion_pos[i,0]
-        sol_sc_ion_pos[i,1] = sol_ion_positions[i,1]*sol_sc_fac[1]
-        sol_center_pos[1] += sol_sc_ion_pos[i,1]
-        sol_sc_ion_pos[i,2] = sol_ion_positions[i,2]*sol_sc_fac[2]
-        sol_center_pos[2] += sol_sc_ion_pos[i,2]
+        sol_sc_ion_pos[i,:] = np.multiply(sol_ion_positions[i,:],sol_sc_fac)
+        sol_center_pos = np.add(sol_center_pos,sol_sc_ion_pos[i,:])
 sol_center_pos[0] /= sol_num_ions
 sol_center_pos[1] /= sol_num_ions
 sol_center_pos[2] /= sol_num_ions
@@ -289,9 +334,7 @@ print(sol_center_pos)
 print()
 sol_rel_pos = np.zeros(sol_ion_positions.shape, dtype=np.double)
 for i in range(sol_sc_ion_pos.shape[0]):
-    sol_rel_pos[i,0] = sol_sc_ion_pos[i,0] - sol_center_pos[0]
-    sol_rel_pos[i,1] = sol_sc_ion_pos[i,1] - sol_center_pos[1]
-    sol_rel_pos[i,2] = sol_sc_ion_pos[i,2] - sol_center_pos[2]
+    sol_rel_pos[i,:] = np.subtract(sol_sc_ion_pos[i,:],sol_center_pos)
 print('solvent relative positions:')
 print(sol_rel_pos)
 print()
@@ -338,6 +381,7 @@ print('occupation ratio:')
 print(occ_rat)
 print()
 
+########## REMOVE? ##########
 mini_cells = np.zeros((3,partitions), dtype=np.double)
 for i in range(partitions):
     scaling = i/partitions
@@ -347,6 +391,7 @@ for i in range(partitions):
 print('mini_cells:')
 print(mini_cells)
 print()
+#############################
 
 use_cell = np.ones((partitions,partitions,partitions), dtype=bool)
 if coord_scheme == 'Direct':
@@ -452,8 +497,8 @@ for cell_ind,cell in enumerate(avail_cells):
         print(f'rotated ion position for ion index {sol_ion}:')
         print(rot_pos)
         print()
-        descaled_pos = np.divide(rot_pos, sc_lat_vec_len)
-        trans_pos = np.add(descaled_pos, trans_array)
+        new_basis_pos = np.matmul(to_poscar_mat, rot_pos)
+        trans_pos = np.add(new_basis_pos, trans_array)
         print(f'transalted ion positions for ion index {sol_ion}:')
         print(trans_pos)
         print()
