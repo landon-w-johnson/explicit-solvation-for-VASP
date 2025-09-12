@@ -319,7 +319,6 @@ if sol_coord_scheme == 'Direct':
         sol_sc_ion_pos[i,:] = np.matmul(from_solvent_mat,sol_ion_positions[i,:])
         sol_center_pos = np.add(sol_center_pos,sol_sc_ion_pos[i,:])
 else: # Cartesian
-    print('WARNING! The Cartesian scaling code block has not been tested or debugged!')
     for i in range(sol_ion_positions.shape[0]):
         sol_sc_ion_pos[i,:] = np.multiply(sol_ion_positions[i,:],sol_sc_fac)
         sol_center_pos = np.add(sol_center_pos,sol_sc_ion_pos[i,:])
@@ -395,7 +394,7 @@ print()
 
 use_cell = np.ones((partitions,partitions,partitions), dtype=bool)
 if coord_scheme == 'Direct':
-    for ion in range(ion_positions.shape[0]):
+    for ion in range(num_ions):
         x_cell = partitions-1
         y_cell = partitions-1
         z_cell = partitions-1
@@ -413,10 +412,24 @@ if coord_scheme == 'Direct':
                 break
         use_cell[x_cell,y_cell,z_cell] = False
 else: # Cartesian
-    print('Cartesian coordinate scheme not yet implemented')
-    print('Please convert your POSCAR to direct coordinate scheme')
-    print('Exiting program')
-    sys.exit()
+    for ion in range(num_ions):
+        direct_pos = np.matmul(to_poscar_mat,car_ion_pos[ion,:])
+        x_cell = partitions-1
+        y_cell = partitions-1
+        z_cell = partitions-1
+        for x in range(1,partitions):
+            if direct_pos[0] < x/partitions:
+                x_cell = x - 1
+                break
+        for y in range(1,partitions):
+            if direct_pos[1] < y/partitions:
+                y_cell = y - 1
+                break
+        for z in range(1,partitions):
+            if direct_pos[2] < z/partitions:
+                z_cell = z - 1
+                break
+        use_cell[x_cell,y_cell,z_cell] = False
 print('cells used:')
 print(use_cell)
 print()
@@ -459,51 +472,104 @@ for i,name in enumerate(sol_species_names):
 sep_sol_pos = np.zeros((num_used_cells*sol_num_ions, 3), dtype=np.double)
 rot_mat = np.zeros((3,3), dtype=np.double)
 ind = 0
-for cell_ind,cell in enumerate(avail_cells):
-    x = random.random()
-    y = random.random()
-    z = random.random()
-    trans_array = np.array([(cell[0]+x)*part_len, (cell[1]+y)*part_len, (cell[2]+z)*part_len], dtype=np.double)
-    print('cell index:')
-    print(cell_ind)
-    print()
-    print('cell:')
-    print(cell)
-    print()
-    print('translation array:')
-    print(trans_array)
-    print()
-    alpha = random.random()*2*math.pi
-    beta = random.random()*2*math.pi
-    gamma = random.random()*2*math.pi
-    rot_mat[0,0] = math.cos(alpha)*math.cos(beta)
-    rot_mat[0,1] = math.cos(alpha)*math.sin(beta)*math.sin(gamma)\
-        - math.sin(alpha)*math.cos(gamma)
-    rot_mat[0,2] = math.cos(alpha)*math.sin(beta)*math.cos(gamma)\
-        + math.sin(alpha)*math.sin(gamma)
-    rot_mat[1,0] = math.sin(alpha)*math.cos(beta)
-    rot_mat[1,1] = math.sin(alpha)*math.sin(beta)*math.sin(gamma)\
-        + math.cos(alpha)*math.cos(gamma)
-    rot_mat[1,2] = math.sin(alpha)*math.sin(beta)*math.cos(gamma)\
-        - math.cos(alpha)*math.sin(gamma)
-    rot_mat[2,0] = -math.sin(beta)
-    rot_mat[2,1] = math.cos(beta)*math.sin(gamma)
-    rot_mat[2,2] = math.cos(beta)*math.cos(gamma)
-    print('rotation matrix:')
-    print(rot_mat)
-    print()
-    for sol_ion in range(sol_num_ions):
-        rot_pos = np.matmul(rot_mat,sol_rel_pos[sol_ion,:])
-        print(f'rotated ion position for ion index {sol_ion}:')
-        print(rot_pos)
+if coord_scheme == 'Direct':
+    for cell_ind,cell in enumerate(avail_cells):
+        x = random.random()
+        y = random.random()
+        z = random.random()
+        trans_array = np.array([(cell[0]+x)*part_len, (cell[1]+y)*part_len, (cell[2]+z)*part_len], dtype=np.double)
+        print('cell index:')
+        print(cell_ind)
         print()
-        new_basis_pos = np.matmul(to_poscar_mat, rot_pos)
-        trans_pos = np.add(new_basis_pos, trans_array)
-        print(f'transalted ion positions for ion index {sol_ion}:')
-        print(trans_pos)
+        print('cell:')
+        print(cell)
         print()
-        sep_sol_pos[ind, :] = trans_pos
-        ind += 1
+        print('translation array:')
+        print(trans_array)
+        print()
+        alpha = random.random()*2*math.pi
+        beta = random.random()*2*math.pi
+        gamma = random.random()*2*math.pi
+        rot_mat[0,0] = math.cos(alpha)*math.cos(beta)
+        rot_mat[0,1] = math.cos(alpha)*math.sin(beta)*math.sin(gamma)\
+            - math.sin(alpha)*math.cos(gamma)
+        rot_mat[0,2] = math.cos(alpha)*math.sin(beta)*math.cos(gamma)\
+            + math.sin(alpha)*math.sin(gamma)
+        rot_mat[1,0] = math.sin(alpha)*math.cos(beta)
+        rot_mat[1,1] = math.sin(alpha)*math.sin(beta)*math.sin(gamma)\
+            + math.cos(alpha)*math.cos(gamma)
+        rot_mat[1,2] = math.sin(alpha)*math.sin(beta)*math.cos(gamma)\
+            - math.cos(alpha)*math.sin(gamma)
+        rot_mat[2,0] = -math.sin(beta)
+        rot_mat[2,1] = math.cos(beta)*math.sin(gamma)
+        rot_mat[2,2] = math.cos(beta)*math.cos(gamma)
+        print('rotation matrix:')
+        print(rot_mat)
+        print()
+        for sol_ion in range(sol_num_ions):
+            rot_pos = np.matmul(rot_mat,sol_rel_pos[sol_ion,:])
+            print(f'rotated ion position for ion index {sol_ion}:')
+            print(rot_pos)
+            print()
+            new_basis_pos = np.matmul(to_poscar_mat, rot_pos)
+            trans_pos = np.add(new_basis_pos, trans_array)
+            print(f'transalted ion positions for ion index {sol_ion}:')
+            print(trans_pos)
+            print()
+            sep_sol_pos[ind, :] = trans_pos
+            ind += 1
+else: # Cartesian
+    for cell_ind,cell in enumerate(avail_cells):
+        x = random.random()
+        y = random.random()
+        z = random.random()
+        trans_array = np.zeros(3, dtype=np.double)
+        trans_array[0] = (cell[0]+x)*part_len*(sc_lat_vec[0,0]+sc_lat_vec[1,0]+sc_lat_vec[2,0])
+        trans_array[1] = (cell[1]+y)*part_len*(sc_lat_vec[0,1]+sc_lat_vec[1,1]+sc_lat_vec[2,1])
+        trans_array[2] = (cell[2]+z)*part_len*(sc_lat_vec[0,2]+sc_lat_vec[1,2]+sc_lat_vec[2,2])
+        print('cell index:')
+        print(cell_ind)
+        print()
+        print('cell:')
+        print(cell)
+        print()
+        print('translation array:')
+        print(trans_array)
+        print()
+        alpha = random.random()*2*math.pi
+        beta = random.random()*2*math.pi
+        gamma = random.random()*2*math.pi
+        rot_mat[0,0] = math.cos(alpha)*math.cos(beta)
+        rot_mat[0,1] = math.cos(alpha)*math.sin(beta)*math.sin(gamma)\
+            - math.sin(alpha)*math.cos(gamma)
+        rot_mat[0,2] = math.cos(alpha)*math.sin(beta)*math.cos(gamma)\
+            + math.sin(alpha)*math.sin(gamma)
+        rot_mat[1,0] = math.sin(alpha)*math.cos(beta)
+        rot_mat[1,1] = math.sin(alpha)*math.sin(beta)*math.sin(gamma)\
+            + math.cos(alpha)*math.cos(gamma)
+        rot_mat[1,2] = math.sin(alpha)*math.sin(beta)*math.cos(gamma)\
+            - math.cos(alpha)*math.sin(gamma)
+        rot_mat[2,0] = -math.sin(beta)
+        rot_mat[2,1] = math.cos(beta)*math.sin(gamma)
+        rot_mat[2,2] = math.cos(beta)*math.cos(gamma)
+        print('rotation matrix:')
+        print(rot_mat)
+        print()
+        for sol_ion in range(sol_num_ions):
+            rot_pos = np.matmul(rot_mat,sol_rel_pos[sol_ion,:])
+            print(f'rotated ion position for ion index {sol_ion}:')
+            print(rot_pos)
+            print()
+            trans_pos = np.add(rot_pos, trans_array)
+            print(f'transalted ion positions for ion index {sol_ion} before descaling:')
+            print(trans_pos)
+            print()
+            descaled_pos = np.divide(trans_pos,sc_fac)
+            print(f'transalted ion positions for ion index {sol_ion} after descaling:')
+            print(descaled_pos)
+            print()
+            sep_sol_pos[ind, :] = descaled_pos
+            ind += 1
 print('species separated solvent ion positions:')
 print(sep_sol_pos)
 print()
