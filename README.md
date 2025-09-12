@@ -26,8 +26,6 @@
 
 # Known Bugs
 
-1. This does not work with the Cartesian coordinate scheme yet.
-
 1. It is not yet checking for collisions when placing solvent molecules, so VASP will very likely crash if you try to use a high density. You may want to visualize the output to make sure you don't have any atoms sitting on top of each other.
 
 1. This will not work if your solvent molecule spans across the periodic boundaries in the file `SOLVENT`.
