@@ -380,17 +380,16 @@ print('occupation ratio:')
 print(occ_rat)
 print()
 
-########## REMOVE? ##########
-mini_cells = np.zeros((3,partitions), dtype=np.double)
-for i in range(partitions):
-    scaling = i/partitions
-    mini_cells[0,i] = scaling*lat_lens[0]
-    mini_cells[1,i] = scaling*lat_lens[1]
-    mini_cells[2,i] = scaling*lat_lens[2]
-print('mini_cells:')
-print(mini_cells)
+atoms_in_mini_cell = []
+for x in range(partitions):
+    atoms_in_mini_cell.append([])
+    for y in range(partitions):
+        atoms_in_mini_cell[x].append([])
+        for z in range(partitions):
+            atoms_in_mini_cell[x][y].append([])
+print('instantiated atoms in mini cell:')
+print(atoms_in_mini_cell)
 print()
-#############################
 
 use_cell = np.ones((partitions,partitions,partitions), dtype=bool)
 if coord_scheme == 'Direct':
@@ -411,6 +410,7 @@ if coord_scheme == 'Direct':
                 z_cell = z - 1
                 break
         use_cell[x_cell,y_cell,z_cell] = False
+        atoms_in_mini_cell[x_cell][y_cell][z_cell].append(np.array(car_ion_pos[ion,:], dtype=np.double))
 else: # Cartesian
     for ion in range(num_ions):
         direct_pos = np.matmul(to_poscar_mat,car_ion_pos[ion,:])
@@ -430,8 +430,12 @@ else: # Cartesian
                 z_cell = z - 1
                 break
         use_cell[x_cell,y_cell,z_cell] = False
+        atoms_in_mini_cell[x_cell][y_cell][z_cell].append(np.array(car_ion_pos[ion,:], dtype=np.double))
 print('cells used:')
 print(use_cell)
+print()
+print('atoms in mini cells:')
+print(atoms_in_mini_cell)
 print()
 
 num_usable_mini_cells = 0
@@ -471,20 +475,20 @@ for i,name in enumerate(sol_species_names):
         sol_ion_identifier.append(name)
 sep_sol_pos = np.zeros((num_used_cells*sol_num_ions, 3), dtype=np.double)
 rot_mat = np.zeros((3,3), dtype=np.double)
-ind = 0
+ind = sol_num_ions
 if coord_scheme == 'Direct':
     for cell_ind,cell in enumerate(avail_cells):
         x = random.random()
         y = random.random()
         z = random.random()
-        trans_array = np.array([(cell[0]+x)*part_len, (cell[1]+y)*part_len, (cell[2]+z)*part_len], dtype=np.double)
+        trans_array = np.matmul(from_poscar_mat, np.array([(cell[0]+x)*part_len, (cell[1]+y)*part_len, (cell[2]+z)*part_len], dtype=np.double))
         print('cell index:')
         print(cell_ind)
         print()
         print('cell:')
         print(cell)
         print()
-        print('translation array:')
+        print('translation array in Cartesian:')
         print(trans_array)
         print()
         alpha = random.random()*2*math.pi
@@ -506,18 +510,66 @@ if coord_scheme == 'Direct':
         print('rotation matrix:')
         print(rot_mat)
         print()
-        for sol_ion in range(sol_num_ions):
-            rot_pos = np.matmul(rot_mat,sol_rel_pos[sol_ion,:])
-            print(f'rotated ion position for ion index {sol_ion}:')
-            print(rot_pos)
-            print()
-            new_basis_pos = np.matmul(to_poscar_mat, rot_pos)
-            trans_pos = np.add(new_basis_pos, trans_array)
-            print(f'transalted ion positions for ion index {sol_ion}:')
-            print(trans_pos)
-            print()
-            sep_sol_pos[ind, :] = trans_pos
-            ind += 1
+        too_close = True
+        while too_close:
+            too_close = False
+            shift_vec = np.zeros(3, dtype=np.double)
+            tmp_ion_storage = np.zeros((sol_num_ions,3), dtype=np.double)
+            ind -= sol_num_ions
+            for sol_ion in range(sol_num_ions):
+                rot_pos = np.matmul(rot_mat,sol_rel_pos[sol_ion,:])
+                print(f'rotated ion position for ion index {sol_ion}:')
+                print(rot_pos)
+                print()
+                trans_pos = np.add(rot_pos, trans_array)
+                print(f'transalted ion positions for ion index {sol_ion}:')
+                print(trans_pos)
+                print()
+                for x_cell in [(cell[0]-1)%partitions, cell[0], (cell[0]+1)%partitions]:
+                    for y_cell in [(cell[1]-1)%partitions, cell[1], (cell[1]+1)%partitions]:
+                        for z_cell in [(cell[2]-1)%partitions, cell[2], (cell[2]+1)%partitions]:
+                            for already_existing_atom_pos in atoms_in_mini_cell[x_cell][y_cell][z_cell]:
+                                print('already existing atom position before checking periodic boundaries:')
+                                print(already_existing_atom_pos)
+                                print()
+                                pbc_pos = already_existing_atom_pos
+                                if x_cell==0 and cell[0]==partitions-1:
+                                    pbc_pos = np.add(pbc_pos, sc_lat_vec[0,:])
+                                elif x_cell==partitions-1 and cell[0]==0:
+                                    pbc_pos = np.subtract(pbc_pos, sc_lat_vec[0,:])
+                                if y_cell==0 and cell[1]==partitions-1:
+                                    pbc_pos = np.add(pbc_pos, sc_lat_vec[1,:])
+                                elif y_cell==partitions-1 and cell[1]==0:
+                                    pbc_pos = np.subtract(pbc_pos, sc_lat_vec[1,:])
+                                if z_cell==0 and cell[2]==partitions-1:
+                                    pbc_pos = np.add(pbc_pos, sc_lat_vec[2,:])
+                                elif z_cell==partitions-1 and cell[2]==0:
+                                    pbc_pos = np.subtract(pbc_pos, sc_lat_vec[2,:])
+                                print('already existing atom position after checking periodic boundaries:')
+                                print(pbc_pos)
+                                print()
+                                diff_vec = np.subtract(trans_pos, pbc_pos)
+                                print(f'difference vector in cell ({x_cell},{y_cell},{z_cell}):')
+                                print(diff_vec)
+                                print()
+                                diff_len = math.sqrt(diff_vec[0]**2 + diff_vec[1]**2 + diff_vec[2]**2)
+                                print('difference vector length:')
+                                print(diff_len)
+                                print()
+                                if diff_len < 1:
+                                    too_close = True
+                                    print('WHOAH WHOAH TOO CLOSE')
+                                    print()
+                                    shift_vec = np.add(shift_vec, diff_vec)
+                tmp_ion_storage[sol_ion,:] = trans_pos
+                ind += 1
+            trans_array = np.add(trans_array, shift_vec)
+        for i in range(sol_num_ions):
+            print(f'output index: {ind-sol_num_ions+i}')
+            print(f'input index: {i}')
+            sep_sol_pos[ind-sol_num_ions+i,:] = np.matmul(to_poscar_mat, tmp_ion_storage[i,:])
+            atoms_in_mini_cell[cell[0]][cell[1]][cell[2]].append(np.array(tmp_ion_storage[i,:]))
+        ind += sol_num_ions
 else: # Cartesian
     for cell_ind,cell in enumerate(avail_cells):
         x = random.random()
@@ -555,21 +607,66 @@ else: # Cartesian
         print('rotation matrix:')
         print(rot_mat)
         print()
-        for sol_ion in range(sol_num_ions):
-            rot_pos = np.matmul(rot_mat,sol_rel_pos[sol_ion,:])
-            print(f'rotated ion position for ion index {sol_ion}:')
-            print(rot_pos)
-            print()
-            trans_pos = np.add(rot_pos, trans_array)
-            print(f'transalted ion positions for ion index {sol_ion} before descaling:')
-            print(trans_pos)
-            print()
-            descaled_pos = np.divide(trans_pos,sc_fac)
-            print(f'transalted ion positions for ion index {sol_ion} after descaling:')
-            print(descaled_pos)
-            print()
-            sep_sol_pos[ind, :] = descaled_pos
-            ind += 1
+        too_close = True
+        while too_close:
+            too_close = False
+            shift_vec = np.zeros(3, dtype=np.double)
+            tmp_ion_storage = np.zeros((sol_num_ions,3), dtype=np.double)
+            ind -= sol_num_ions
+            for sol_ion in range(sol_num_ions):
+                rot_pos = np.matmul(rot_mat,sol_rel_pos[sol_ion,:])
+                print(f'rotated ion position for ion index {sol_ion}:')
+                print(rot_pos)
+                print()
+                trans_pos = np.add(rot_pos, trans_array)
+                print(f'transalted ion positions for ion index {sol_ion} before descaling:')
+                print(trans_pos)
+                print()
+                for x_cell in [(cell[0]-1)%partitions, cell[0], (cell[0]+1)%partitions]:
+                    for y_cell in [(cell[1]-1)%partitions, cell[1], (cell[1]+1)%partitions]:
+                        for z_cell in [(cell[2]-1)%partitions, cell[2], (cell[2]+1)%partitions]:
+                            for already_existing_atom_pos in atoms_in_mini_cell[x_cell][y_cell][z_cell]:
+                                print('already existing atom position before checking periodic boundaries:')
+                                print(already_existing_atom_pos)
+                                print()
+                                pbc_pos = already_existing_atom_pos
+                                if x_cell==0 and cell[0]==partitions-1:
+                                    pbc_pos = np.add(pbc_pos, sc_lat_vec[0,:])
+                                elif x_cell==partitions-1 and cell[0]==0:
+                                    pbc_pos = np.subtract(pbc_pos, sc_lat_vec[0,:])
+                                if y_cell==0 and cell[1]==partitions-1:
+                                    pbc_pos = np.add(pbc_pos, sc_lat_vec[1,:])
+                                elif y_cell==partitions-1 and cell[1]==0:
+                                    pbc_pos = np.subtract(pbc_pos, sc_lat_vec[1,:])
+                                if z_cell==0 and cell[2]==partitions-1:
+                                    pbc_pos = np.add(pbc_pos, sc_lat_vec[2,:])
+                                elif z_cell==partitions-1 and cell[2]==0:
+                                    pbc_pos = np.subtract(pbc_pos, sc_lat_vec[2,:])
+                                print('already existing atom position after checking periodic boundaries:')
+                                print(pbc_pos)
+                                print()
+                                diff_vec = np.subtract(trans_pos, pbc_pos)
+                                print(f'difference vector in cell ({x_cell},{y_cell},{z_cell}):')
+                                print(diff_vec)
+                                print()
+                                diff_len = math.sqrt(diff_vec[0]**2 + diff_vec[1]**2 + diff_vec[2]**2)
+                                print('difference vector length:')
+                                print(diff_len)
+                                print()
+                                if diff_len < 1:
+                                    too_close = True
+                                    print('WHOAH WHOAH TOO CLOSE')
+                                    print()
+                                    shift_vec = np.add(shift_vec, diff_vec)
+                tmp_ion_storage[sol_ion,:] = trans_pos
+                ind += 1
+                trans_array = np.add(trans_array, shift_vec)
+        for i in range(sol_num_ions):
+            print(f'output index: {ind-sol_num_ions+i}')
+            print(f'input index: {i}')
+            sep_sol_pos[ind-sol_num_ions+i,:] = np.divide(tmp_ion_storage[i,:], sc_fac)
+            atoms_in_mini_cell[cell[0]][cell[1]][cell[2]].append(np.array(tmp_ion_storage[i,:]))
+        ind += sol_num_ions
 print('species separated solvent ion positions:')
 print(sep_sol_pos)
 print()
