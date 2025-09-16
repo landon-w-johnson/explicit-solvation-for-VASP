@@ -72,9 +72,6 @@ to_poscar_mat = np.zeros((3,3), dtype=np.double)
 to_poscar_mat[0,:] = np.cross(from_poscar_mat[:,1],from_poscar_mat[:,2])
 to_poscar_mat[1,:] = np.cross(from_poscar_mat[:,2],from_poscar_mat[:,0])
 to_poscar_mat[2,:] = np.cross(from_poscar_mat[:,0],from_poscar_mat[:,1])
-print('to_poscar_mat before dividing by determinant:')
-print(to_poscar_mat)
-print()
 to_poscar_mat = np.divide(to_poscar_mat,det_from_poscar_mat)
 
 current_line = 5
@@ -140,6 +137,7 @@ sol_scaling_factor = re.split(' +', solvent[1].lstrip().rstrip())
 sol_sc_fac = np.ones(3, dtype=np.double)
 if len(sol_scaling_factor) == 1:
     if float(sol_scaling_factor[0]) < 0:
+        print('found negative scaling factor')
     else:
         for i in range(3):
             sol_sc_fac[i] = np.double(sol_scaling_factor[0])
