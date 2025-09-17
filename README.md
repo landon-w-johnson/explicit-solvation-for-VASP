@@ -38,4 +38,6 @@
 
 1. Please contact me at landon.w.johnson@ndsu.edu if you notice any bugs or would like to have me implement certain features.
 
+1. Let me know if there's a particular solvent molecule you want to use that isn't in the `solvents` subdirectory. I can optimize the structure of that molecule and add it to this repository.
+
 1. This is currently set to prevent placing solvent atoms within 1 Angstrom of atoms within another molecule/material. This can be easily changed for user-defined cutoff distances.
