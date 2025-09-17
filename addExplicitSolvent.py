@@ -208,7 +208,7 @@ if sol_coord_scheme[0].lower() == 'c' or sol_coord_scheme[0].lower() == 'k':
 else:
     sol_coord_scheme = 'Direct'
 
-sol_header_skip = current_line + 1
+sol_header_skip = sol_current_line + 1
 sol_ion_positions = np.zeros((sol_num_ions,3), dtype=np.double)
 i = 0
 for sol_line_ind in range(sol_header_skip,sol_header_skip+sol_num_ions):
