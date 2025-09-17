@@ -30,6 +30,8 @@
 
 1. Your `POSCAR` and `SOLVENT` files cannot have any blank lines in the header (anything above the ion positions).
 
+1. Your `POSCAR` file must have a blank line after the ion positions.
+
 
 
 
