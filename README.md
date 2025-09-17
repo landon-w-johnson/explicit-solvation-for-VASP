@@ -10,7 +10,7 @@
 
 1. Put your unsolvated `POSCAR` file in your working directory (whichever directory has `addExplicitSolvent.py`).
 
-1. Put a `POSCAR` of your desired solvent molecule in your working directory with the name `SOLVENT`. Some samples are included in the `solvents` directory.
+1. Put a `POSCAR` of your desired solvent molecule in your working directory with the name `SOLVENT` (watch out for Windows automatically adding the `.txt` extension). Some samples are included in the `solvents` directory.
 
 1. Run `python addExplicitSolvent.py`.
 
@@ -27,6 +27,8 @@
 # Known Bugs
 
 1. This will not work if your solvent molecule spans across the periodic boundaries in the file `SOLVENT`.
+
+1. Your `POSCAR` and `SOLVENT` files cannot have any blank lines in the header (anything above the ion positions).
 
 
 
