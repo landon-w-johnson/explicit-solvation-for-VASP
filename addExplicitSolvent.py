@@ -398,9 +398,18 @@ else: # Cartesian
         y = random.random()
         z = random.random()
         trans_array = np.zeros(3, dtype=np.double)
-        trans_array[0] = (cell[0]+x)*part_len*(sc_lat_vec[0,0]+sc_lat_vec[1,0]+sc_lat_vec[2,0])
-        trans_array[1] = (cell[1]+y)*part_len*(sc_lat_vec[0,1]+sc_lat_vec[1,1]+sc_lat_vec[2,1])
-        trans_array[2] = (cell[2]+z)*part_len*(sc_lat_vec[0,2]+sc_lat_vec[1,2]+sc_lat_vec[2,2])
+        #trans_array[0] = (cell[0]+x)*part_len*(sc_lat_vec[0,0]+sc_lat_vec[1,0]+sc_lat_vec[2,0])
+        #trans_array[1] = (cell[1]+y)*part_len*(sc_lat_vec[0,1]+sc_lat_vec[1,1]+sc_lat_vec[2,1])
+        #trans_array[2] = (cell[2]+z)*part_len*(sc_lat_vec[0,2]+sc_lat_vec[1,2]+sc_lat_vec[2,2])
+        trans_array[0] = (cell[0]+x)*part_len*sc_lat_vec[0,0]\
+            + (cell[1]+y)*part_len*sc_lat_vec[1,0]\
+            + (cell[2]+z)*part_len*sc_lat_vec[2,0]
+        trans_array[1] = (cell[0]+x)*part_len*sc_lat_vec[0,1]\
+            + (cell[1]+y)*part_len*sc_lat_vec[1,1]\
+            + (cell[2]+z)*part_len*sc_lat_vec[2,1]
+        trans_array[2] = (cell[0]+x)*part_len*sc_lat_vec[0,2]\
+            + (cell[1]+y)*part_len*sc_lat_vec[1,2]\
+            + (cell[2]+z)*part_len*sc_lat_vec[2,2]
         alpha = random.random()*2*math.pi
         beta = random.random()*2*math.pi
         gamma = random.random()*2*math.pi
