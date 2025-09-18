@@ -382,7 +382,7 @@ if coord_scheme == 'Direct':
                                     pbc_pos = np.subtract(pbc_pos, sc_lat_vec[2,:])
                                 diff_vec = np.subtract(trans_pos, pbc_pos)
                                 diff_len = math.sqrt(diff_vec[0]**2 + diff_vec[1]**2 + diff_vec[2]**2)
-                                if diff_len < 1:
+                                if diff_len < 2:
                                     too_close = True
                                     shift_vec = np.add(shift_vec, diff_vec)
                 tmp_ion_storage[sol_ion,:] = trans_pos
@@ -454,7 +454,7 @@ else: # Cartesian
                                     pbc_pos = np.subtract(pbc_pos, sc_lat_vec[2,:])
                                 diff_vec = np.subtract(trans_pos, pbc_pos)
                                 diff_len = math.sqrt(diff_vec[0]**2 + diff_vec[1]**2 + diff_vec[2]**2)
-                                if diff_len < 1:
+                                if diff_len < 2:
                                     too_close = True
                                     shift_vec = np.add(shift_vec, diff_vec)
                 tmp_ion_storage[sol_ion,:] = trans_pos

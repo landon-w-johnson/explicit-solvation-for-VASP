@@ -42,4 +42,4 @@
 
 1. Let me know if there's a particular solvent molecule you want to use that isn't in the `solvents` subdirectory. I can optimize the structure of that molecule and add it to this repository.
 
-1. This is currently set to prevent placing solvent atoms within 1 Angstrom of atoms within another molecule/material. This can be easily changed for user-defined cutoff distances.
+1. This is currently set to prevent placing solvent atoms within 2 Angstroms of atoms within another molecule/material. This can be easily changed for user-defined cutoff distances.
