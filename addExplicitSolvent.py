@@ -6,8 +6,17 @@ import random
 
 
 
-atomic_names = ['H','He','Li','Be','B','C','N','O','F','Ne']
-atomic_masses = np.array([1.008,4.003,6.941,9.012,10.811,12.011,14.007,15.999,18.998,20.180], dtype=np.double) # from https://sciencenotes.org/periodic-table-with-atomic-mass/
+cutoff_dist = 2 # Angstroms
+
+
+
+atomic_names = ['H','He',\
+                'Li','Be','B','C','N','O','F','Ne',\
+                'Na','Mg','Al','Si','P','S','Cl','Ar']
+atomic_masses = np.array([1.008,4.003,\
+                          6.941,9.012,10.811,12.011,14.007,15.999,18.998,20.180,\
+                          22.99,24.305,26.982,28.086,30.974,32.066,35.453,39.948],\
+                         dtype=np.double) # from https://sciencenotes.org/periodic-table-with-atomic-mass/
 
 
 
@@ -382,7 +391,7 @@ if coord_scheme == 'Direct':
                                     pbc_pos = np.subtract(pbc_pos, sc_lat_vec[2,:])
                                 diff_vec = np.subtract(trans_pos, pbc_pos)
                                 diff_len = math.sqrt(diff_vec[0]**2 + diff_vec[1]**2 + diff_vec[2]**2)
-                                if diff_len < 2:
+                                if diff_len < cutoff_dist:
                                     too_close = True
                                     shift_vec = np.add(shift_vec, diff_vec)
                 tmp_ion_storage[sol_ion,:] = trans_pos
@@ -454,7 +463,7 @@ else: # Cartesian
                                     pbc_pos = np.subtract(pbc_pos, sc_lat_vec[2,:])
                                 diff_vec = np.subtract(trans_pos, pbc_pos)
                                 diff_len = math.sqrt(diff_vec[0]**2 + diff_vec[1]**2 + diff_vec[2]**2)
-                                if diff_len < 2:
+                                if diff_len < cutoff_dist:
                                     too_close = True
                                     shift_vec = np.add(shift_vec, diff_vec)
                 tmp_ion_storage[sol_ion,:] = trans_pos

@@ -12,7 +12,7 @@
 
 1. Put a `POSCAR` of your desired solvent molecule in your working directory with the name `SOLVENT` (watch out for Windows automatically adding the `.txt` extension). Some samples are included in the `solvents` directory.
 
-1. Run `python addExplicitSolvent.py`.
+1. Run `python addExplicitSolvent.py`. The variable `cutoff_dist` at the beginning of the script controls how close solvent atoms can be placed to already existing atoms.
 
 1. While `addExplicitSolvent.py` is running, you will be prompted to enter the density of your solvent in grams per mililiter. All other outputs are for debugging purposes.
 
@@ -41,5 +41,3 @@
 1. Please contact me at landon.w.johnson@ndsu.edu if you notice any bugs or would like to have me implement certain features.
 
 1. Let me know if there's a particular solvent molecule you want to use that isn't in the `solvents` subdirectory. I can optimize the structure of that molecule and add it to this repository.
-
-1. This is currently set to prevent placing solvent atoms within 2 Angstroms of atoms within another molecule/material. This can be easily changed for user-defined cutoff distances.
