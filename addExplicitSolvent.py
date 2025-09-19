@@ -6,9 +6,26 @@ import random
 
 
 
+########################################################################
+########### You MUST have 1 < excluded_neighbors_cutoff < 27 ###########
+########################################################################
+###### If solvent molecules are being placed within atomic cages: ######
+######              Turn excluded_neighbors_cutoff up             ######
+########################################################################
+####### If solvent molecules aren't being placed within cavities: ######
+#######            Turn excluded_neighbors_cutoff down            ######
+########################################################################
+
 cutoff_dist = 2 # Angstroms
+excluded_neighbors_cutoff = 18
 
 
+
+########################################################################
+######    If your solvent includes an element not listere here:   ######
+######        Include the atomic symbol and the atomic mass       ######
+###### The atomic symbol and atomic mass MUST have the same index ######
+########################################################################
 
 atomic_names = ['H','He',\
                 'Li','Be','B','C','N','O','F','Ne',\
@@ -17,6 +34,16 @@ atomic_masses = np.array([1.008,4.003,\
                           6.941,9.012,10.811,12.011,14.007,15.999,18.998,20.180,\
                           22.99,24.305,26.982,28.086,30.974,32.066,35.453,39.948],\
                          dtype=np.double) # from https://sciencenotes.org/periodic-table-with-atomic-mass/
+
+
+
+
+
+########################################################################
+######## You should not need to touch anything below this point ########
+########################################################################
+
+
 
 
 
@@ -317,13 +344,9 @@ else: # Cartesian
                 break
         use_cell[x_cell,y_cell,z_cell] = False
         atoms_in_mini_cell[x_cell][y_cell][z_cell].append(np.array(car_ion_pos[ion,:], dtype=np.double))
-print('use_cell before checking neighbors:')
-print(use_cell)
-print()
+
 excluding_neighbors = True
-num_iterations = 0
 while excluding_neighbors:
-    num_iterations += 1
     excluding_neighbors = False
     for x_cell in range(partitions):
         for y_cell in range(partitions):
@@ -336,15 +359,9 @@ while excluding_neighbors:
                                 if near_x != x_cell or near_y != y_cell or near_z != z_cell:
                                     if not use_cell[near_x,near_y,near_z]:
                                         num_excluded_neighbors += 1
-                                        if num_excluded_neighbors >= 17:
+                                        if num_excluded_neighbors >= excluded_neighbors_cutoff:
                                             use_cell[x_cell,y_cell,z_cell] = False
                                             excluding_neighbors = True
-print('use_cell after checking neighbors:')
-print(use_cell)
-print()
-print(f'num_iterations = {num_iterations}')
-print()
-                            
 
 num_usable_mini_cells = 0
 avail_cells = []
@@ -371,132 +388,189 @@ rot_mat = np.zeros((3,3), dtype=np.double)
 ind = sol_num_ions
 if coord_scheme == 'Direct':
     for cell_ind,cell in enumerate(avail_cells):
-        x = random.random()
-        y = random.random()
-        z = random.random()
-        trans_array = np.matmul(from_poscar_mat, np.array([(cell[0]+x)*part_len, (cell[1]+y)*part_len, (cell[2]+z)*part_len], dtype=np.double))
-        alpha = random.random()*2*math.pi
-        beta = random.random()*2*math.pi
-        gamma = random.random()*2*math.pi
-        rot_mat[0,0] = math.cos(alpha)*math.cos(beta)
-        rot_mat[0,1] = math.cos(alpha)*math.sin(beta)*math.sin(gamma)\
-            - math.sin(alpha)*math.cos(gamma)
-        rot_mat[0,2] = math.cos(alpha)*math.sin(beta)*math.cos(gamma)\
-            + math.sin(alpha)*math.sin(gamma)
-        rot_mat[1,0] = math.sin(alpha)*math.cos(beta)
-        rot_mat[1,1] = math.sin(alpha)*math.sin(beta)*math.sin(gamma)\
-            + math.cos(alpha)*math.cos(gamma)
-        rot_mat[1,2] = math.sin(alpha)*math.sin(beta)*math.cos(gamma)\
-            - math.cos(alpha)*math.sin(gamma)
-        rot_mat[2,0] = -math.sin(beta)
-        rot_mat[2,1] = math.cos(beta)*math.sin(gamma)
-        rot_mat[2,2] = math.cos(beta)*math.cos(gamma)
-        too_close = True
-        while too_close:
-            too_close = False
-            shift_vec = np.zeros(3, dtype=np.double)
-            tmp_ion_storage = np.zeros((sol_num_ions,3), dtype=np.double)
-            ind -= sol_num_ions
-            for sol_ion in range(sol_num_ions):
-                rot_pos = np.matmul(rot_mat,sol_rel_pos[sol_ion,:])
-                trans_pos = np.add(rot_pos, trans_array)
-                for x_cell in [(cell[0]-1)%partitions, cell[0], (cell[0]+1)%partitions]:
-                    for y_cell in [(cell[1]-1)%partitions, cell[1], (cell[1]+1)%partitions]:
-                        for z_cell in [(cell[2]-1)%partitions, cell[2], (cell[2]+1)%partitions]:
-                            for already_existing_atom_pos in atoms_in_mini_cell[x_cell][y_cell][z_cell]:
-                                pbc_pos = already_existing_atom_pos
-                                if x_cell==0 and cell[0]==partitions-1:
-                                    pbc_pos = np.add(pbc_pos, sc_lat_vec[0,:])
-                                elif x_cell==partitions-1 and cell[0]==0:
-                                    pbc_pos = np.subtract(pbc_pos, sc_lat_vec[0,:])
-                                if y_cell==0 and cell[1]==partitions-1:
-                                    pbc_pos = np.add(pbc_pos, sc_lat_vec[1,:])
-                                elif y_cell==partitions-1 and cell[1]==0:
-                                    pbc_pos = np.subtract(pbc_pos, sc_lat_vec[1,:])
-                                if z_cell==0 and cell[2]==partitions-1:
-                                    pbc_pos = np.add(pbc_pos, sc_lat_vec[2,:])
-                                elif z_cell==partitions-1 and cell[2]==0:
-                                    pbc_pos = np.subtract(pbc_pos, sc_lat_vec[2,:])
-                                diff_vec = np.subtract(trans_pos, pbc_pos)
-                                diff_len = math.sqrt(diff_vec[0]**2 + diff_vec[1]**2 + diff_vec[2]**2)
-                                if diff_len < cutoff_dist:
-                                    too_close = True
-                                    shift_vec = np.add(shift_vec, diff_vec)
-                tmp_ion_storage[sol_ion,:] = trans_pos
-                ind += 1
-            trans_array = np.add(trans_array, shift_vec)
+        out_of_bounds = True
+        num_iterations = 0
+        while out_of_bounds:
+            out_of_bounds = False
+            num_iterations += 1
+            if num_iterations%10000 == 0:
+                print(f'mini cell index {cell_ind} {cell} hit {num_iterations} iterations')
+                print('you may need to rerun this at a lower density or with a lower cutoff_len')
+                print()
+            x = random.random()
+            y = random.random()
+            z = random.random()
+            trans_array = np.matmul(from_poscar_mat, np.array([(cell[0]+x)*part_len, (cell[1]+y)*part_len, (cell[2]+z)*part_len], dtype=np.double))
+            trans_lim_lower = np.matmul(from_poscar_mat, np.array([cell[0]*part_len, cell[1]*part_len, cell[2]*part_len], dtype=np.double))
+            trans_lim_upper = np.matmul(from_poscar_mat, np.array([(cell[0]+1)*part_len, (cell[1]+1)*part_len, (cell[2]+1)*part_len], dtype=np.double))
+            alpha = random.random()*2*math.pi
+            beta = random.random()*2*math.pi
+            gamma = random.random()*2*math.pi
+            rot_mat[0,0] = math.cos(alpha)*math.cos(beta)
+            rot_mat[0,1] = math.cos(alpha)*math.sin(beta)*math.sin(gamma)\
+                - math.sin(alpha)*math.cos(gamma)
+            rot_mat[0,2] = math.cos(alpha)*math.sin(beta)*math.cos(gamma)\
+                + math.sin(alpha)*math.sin(gamma)
+            rot_mat[1,0] = math.sin(alpha)*math.cos(beta)
+            rot_mat[1,1] = math.sin(alpha)*math.sin(beta)*math.sin(gamma)\
+                + math.cos(alpha)*math.cos(gamma)
+            rot_mat[1,2] = math.sin(alpha)*math.sin(beta)*math.cos(gamma)\
+                - math.cos(alpha)*math.sin(gamma)
+            rot_mat[2,0] = -math.sin(beta)
+            rot_mat[2,1] = math.cos(beta)*math.sin(gamma)
+            rot_mat[2,2] = math.cos(beta)*math.cos(gamma)
+            too_close = True
+            while too_close:
+                too_close = False
+                shift_vec = np.zeros(3, dtype=np.double)
+                tmp_ion_storage = np.zeros((sol_num_ions,3), dtype=np.double)
+                ind -= sol_num_ions
+                for sol_ion in range(sol_num_ions):
+                    rot_pos = np.matmul(rot_mat,sol_rel_pos[sol_ion,:])
+                    trans_pos = np.add(rot_pos, trans_array)
+                    for x_cell in [(cell[0]-1)%partitions, cell[0], (cell[0]+1)%partitions]:
+                        for y_cell in [(cell[1]-1)%partitions, cell[1], (cell[1]+1)%partitions]:
+                            for z_cell in [(cell[2]-1)%partitions, cell[2], (cell[2]+1)%partitions]:
+                                for already_existing_atom_pos in atoms_in_mini_cell[x_cell][y_cell][z_cell]:
+                                    pbc_pos = already_existing_atom_pos
+                                    if x_cell==0 and cell[0]==partitions-1:
+                                        pbc_pos = np.add(pbc_pos, sc_lat_vec[0,:])
+                                    elif x_cell==partitions-1 and cell[0]==0:
+                                        pbc_pos = np.subtract(pbc_pos, sc_lat_vec[0,:])
+                                    if y_cell==0 and cell[1]==partitions-1:
+                                        pbc_pos = np.add(pbc_pos, sc_lat_vec[1,:])
+                                    elif y_cell==partitions-1 and cell[1]==0:
+                                        pbc_pos = np.subtract(pbc_pos, sc_lat_vec[1,:])
+                                    if z_cell==0 and cell[2]==partitions-1:
+                                        pbc_pos = np.add(pbc_pos, sc_lat_vec[2,:])
+                                    elif z_cell==partitions-1 and cell[2]==0:
+                                        pbc_pos = np.subtract(pbc_pos, sc_lat_vec[2,:])
+                                    diff_vec = np.subtract(trans_pos, pbc_pos)
+                                    diff_len = math.sqrt(diff_vec[0]**2 + diff_vec[1]**2 + diff_vec[2]**2)
+                                    if diff_len < cutoff_dist:
+                                        too_close = True
+                                        shift_vec = np.add(shift_vec, diff_vec)
+                    tmp_ion_storage[sol_ion,:] = trans_pos
+                    ind += 1
+                shift_len = math.sqrt(shift_vec[0]**2+shift_vec[1]**2+shift_vec[2]**2)
+                if not np.isclose(shift_len,0):
+                    shift_sc = cutoff_dist/shift_len
+                    shift_vec = np.multiply(shift_vec, shift_sc)
+                    trans_array = np.add(trans_array, shift_vec)
+                if np.less(trans_array[0],trans_lim_lower[0]) or np.greater(trans_array[0],trans_lim_upper[0]):
+                    out_of_bounds = True
+                if np.less(trans_array[1],trans_lim_lower[1]) or np.greater(trans_array[1],trans_lim_upper[1]):
+                    out_of_bounds = True
+                if np.less(trans_array[2],trans_lim_lower[2]) or np.greater(trans_array[2],trans_lim_upper[2]):
+                    out_of_bounds = True
         for i in range(sol_num_ions):
             sep_sol_pos[ind-sol_num_ions+i,:] = np.matmul(to_poscar_mat, tmp_ion_storage[i,:])
             atoms_in_mini_cell[cell[0]][cell[1]][cell[2]].append(np.array(tmp_ion_storage[i,:]))
         ind += sol_num_ions
 else: # Cartesian
     for cell_ind,cell in enumerate(avail_cells):
-        x = random.random()
-        y = random.random()
-        z = random.random()
-        trans_array = np.zeros(3, dtype=np.double)
-        #trans_array[0] = (cell[0]+x)*part_len*(sc_lat_vec[0,0]+sc_lat_vec[1,0]+sc_lat_vec[2,0])
-        #trans_array[1] = (cell[1]+y)*part_len*(sc_lat_vec[0,1]+sc_lat_vec[1,1]+sc_lat_vec[2,1])
-        #trans_array[2] = (cell[2]+z)*part_len*(sc_lat_vec[0,2]+sc_lat_vec[1,2]+sc_lat_vec[2,2])
-        trans_array[0] = (cell[0]+x)*part_len*sc_lat_vec[0,0]\
-            + (cell[1]+y)*part_len*sc_lat_vec[1,0]\
-            + (cell[2]+z)*part_len*sc_lat_vec[2,0]
-        trans_array[1] = (cell[0]+x)*part_len*sc_lat_vec[0,1]\
-            + (cell[1]+y)*part_len*sc_lat_vec[1,1]\
-            + (cell[2]+z)*part_len*sc_lat_vec[2,1]
-        trans_array[2] = (cell[0]+x)*part_len*sc_lat_vec[0,2]\
-            + (cell[1]+y)*part_len*sc_lat_vec[1,2]\
-            + (cell[2]+z)*part_len*sc_lat_vec[2,2]
-        alpha = random.random()*2*math.pi
-        beta = random.random()*2*math.pi
-        gamma = random.random()*2*math.pi
-        rot_mat[0,0] = math.cos(alpha)*math.cos(beta)
-        rot_mat[0,1] = math.cos(alpha)*math.sin(beta)*math.sin(gamma)\
-            - math.sin(alpha)*math.cos(gamma)
-        rot_mat[0,2] = math.cos(alpha)*math.sin(beta)*math.cos(gamma)\
-            + math.sin(alpha)*math.sin(gamma)
-        rot_mat[1,0] = math.sin(alpha)*math.cos(beta)
-        rot_mat[1,1] = math.sin(alpha)*math.sin(beta)*math.sin(gamma)\
-            + math.cos(alpha)*math.cos(gamma)
-        rot_mat[1,2] = math.sin(alpha)*math.sin(beta)*math.cos(gamma)\
-            - math.cos(alpha)*math.sin(gamma)
-        rot_mat[2,0] = -math.sin(beta)
-        rot_mat[2,1] = math.cos(beta)*math.sin(gamma)
-        rot_mat[2,2] = math.cos(beta)*math.cos(gamma)
-        too_close = True
-        while too_close:
-            too_close = False
-            shift_vec = np.zeros(3, dtype=np.double)
-            tmp_ion_storage = np.zeros((sol_num_ions,3), dtype=np.double)
-            ind -= sol_num_ions
-            for sol_ion in range(sol_num_ions):
-                rot_pos = np.matmul(rot_mat,sol_rel_pos[sol_ion,:])
-                trans_pos = np.add(rot_pos, trans_array)
-                for x_cell in [(cell[0]-1)%partitions, cell[0], (cell[0]+1)%partitions]:
-                    for y_cell in [(cell[1]-1)%partitions, cell[1], (cell[1]+1)%partitions]:
-                        for z_cell in [(cell[2]-1)%partitions, cell[2], (cell[2]+1)%partitions]:
-                            for already_existing_atom_pos in atoms_in_mini_cell[x_cell][y_cell][z_cell]:
-                                pbc_pos = already_existing_atom_pos
-                                if x_cell==0 and cell[0]==partitions-1:
-                                    pbc_pos = np.add(pbc_pos, sc_lat_vec[0,:])
-                                elif x_cell==partitions-1 and cell[0]==0:
-                                    pbc_pos = np.subtract(pbc_pos, sc_lat_vec[0,:])
-                                if y_cell==0 and cell[1]==partitions-1:
-                                    pbc_pos = np.add(pbc_pos, sc_lat_vec[1,:])
-                                elif y_cell==partitions-1 and cell[1]==0:
-                                    pbc_pos = np.subtract(pbc_pos, sc_lat_vec[1,:])
-                                if z_cell==0 and cell[2]==partitions-1:
-                                    pbc_pos = np.add(pbc_pos, sc_lat_vec[2,:])
-                                elif z_cell==partitions-1 and cell[2]==0:
-                                    pbc_pos = np.subtract(pbc_pos, sc_lat_vec[2,:])
-                                diff_vec = np.subtract(trans_pos, pbc_pos)
-                                diff_len = math.sqrt(diff_vec[0]**2 + diff_vec[1]**2 + diff_vec[2]**2)
-                                if diff_len < cutoff_dist:
-                                    too_close = True
-                                    shift_vec = np.add(shift_vec, diff_vec)
-                tmp_ion_storage[sol_ion,:] = trans_pos
-                ind += 1
-                trans_array = np.add(trans_array, shift_vec)
+        out_of_bounds = True
+        num_iterations = 0
+        while out_of_bounds:
+            num_iterations += 1
+            if num_iterations%10000 == 0:
+                print(f'mini cell index {cell_ind} {cell} hit {num_iterations} iterations')
+                print('you may need to rerun this at a lower density or with a lower cutoff_len')
+                print()
+            out_of_bounds = False
+            x = random.random()
+            y = random.random()
+            z = random.random()
+            trans_array = np.zeros(3, dtype=np.double)
+            trans_array[0] = (cell[0]+x)*part_len*sc_lat_vec[0,0]\
+                + (cell[1]+y)*part_len*sc_lat_vec[1,0]\
+                + (cell[2]+z)*part_len*sc_lat_vec[2,0]
+            trans_array[1] = (cell[0]+x)*part_len*sc_lat_vec[0,1]\
+                + (cell[1]+y)*part_len*sc_lat_vec[1,1]\
+                + (cell[2]+z)*part_len*sc_lat_vec[2,1]
+            trans_array[2] = (cell[0]+x)*part_len*sc_lat_vec[0,2]\
+                + (cell[1]+y)*part_len*sc_lat_vec[1,2]\
+                + (cell[2]+z)*part_len*sc_lat_vec[2,2]
+            trans_lim_lower = np.zeros(3, dtype=np.double)
+            trans_lim_lower[0] = cell[0]*part_len*sc_lat_vec[0,0]\
+                + cell[1]*part_len*sc_lat_vec[1,0]\
+                + cell[2]*part_len*sc_lat_vec[2,0]
+            trans_lim_lower[1] = cell[0]*part_len*sc_lat_vec[0,1]\
+                + cell[1]*part_len*sc_lat_vec[1,1]\
+                + cell[2]*part_len*sc_lat_vec[2,1]
+            trans_lim_lower[2] = cell[0]*part_len*sc_lat_vec[0,2]\
+                + cell[1]*part_len*sc_lat_vec[1,2]\
+                + cell[2]*part_len*sc_lat_vec[2,2]
+            trans_lim_upper = np.zeros(3, dtype=np.double)
+            trans_lim_upper[0] = (cell[0]+1)*part_len*sc_lat_vec[0,0]\
+                + (cell[1]+1)*part_len*sc_lat_vec[1,0]\
+                + (cell[2]+1)*part_len*sc_lat_vec[2,0]
+            trans_lim_upper[1] = (cell[0]+1)*part_len*sc_lat_vec[0,1]\
+                + (cell[1]+1)*part_len*sc_lat_vec[1,1]\
+                + (cell[2]+1)*part_len*sc_lat_vec[2,1]
+            trans_lim_upper[2] = (cell[0]+1)*part_len*sc_lat_vec[0,2]\
+                + (cell[1]+1)*part_len*sc_lat_vec[1,2]\
+                + (cell[2]+1)*part_len*sc_lat_vec[2,2]
+            alpha = random.random()*2*math.pi
+            beta = random.random()*2*math.pi
+            gamma = random.random()*2*math.pi
+            rot_mat[0,0] = math.cos(alpha)*math.cos(beta)
+            rot_mat[0,1] = math.cos(alpha)*math.sin(beta)*math.sin(gamma)\
+                - math.sin(alpha)*math.cos(gamma)
+            rot_mat[0,2] = math.cos(alpha)*math.sin(beta)*math.cos(gamma)\
+                + math.sin(alpha)*math.sin(gamma)
+            rot_mat[1,0] = math.sin(alpha)*math.cos(beta)
+            rot_mat[1,1] = math.sin(alpha)*math.sin(beta)*math.sin(gamma)\
+                + math.cos(alpha)*math.cos(gamma)
+            rot_mat[1,2] = math.sin(alpha)*math.sin(beta)*math.cos(gamma)\
+                - math.cos(alpha)*math.sin(gamma)
+            rot_mat[2,0] = -math.sin(beta)
+            rot_mat[2,1] = math.cos(beta)*math.sin(gamma)
+            rot_mat[2,2] = math.cos(beta)*math.cos(gamma)
+            too_close = True
+            while too_close:
+                too_close = False
+                shift_vec = np.zeros(3, dtype=np.double)
+                tmp_ion_storage = np.zeros((sol_num_ions,3), dtype=np.double)
+                ind -= sol_num_ions
+                for sol_ion in range(sol_num_ions):
+                    rot_pos = np.matmul(rot_mat,sol_rel_pos[sol_ion,:])
+                    trans_pos = np.add(rot_pos, trans_array)
+                    for x_cell in [(cell[0]-1)%partitions, cell[0], (cell[0]+1)%partitions]:
+                        for y_cell in [(cell[1]-1)%partitions, cell[1], (cell[1]+1)%partitions]:
+                            for z_cell in [(cell[2]-1)%partitions, cell[2], (cell[2]+1)%partitions]:
+                                for already_existing_atom_pos in atoms_in_mini_cell[x_cell][y_cell][z_cell]:
+                                    pbc_pos = already_existing_atom_pos
+                                    if x_cell==0 and cell[0]==partitions-1:
+                                        pbc_pos = np.add(pbc_pos, sc_lat_vec[0,:])
+                                    elif x_cell==partitions-1 and cell[0]==0:
+                                        pbc_pos = np.subtract(pbc_pos, sc_lat_vec[0,:])
+                                    if y_cell==0 and cell[1]==partitions-1:
+                                        pbc_pos = np.add(pbc_pos, sc_lat_vec[1,:])
+                                    elif y_cell==partitions-1 and cell[1]==0:
+                                        pbc_pos = np.subtract(pbc_pos, sc_lat_vec[1,:])
+                                    if z_cell==0 and cell[2]==partitions-1:
+                                        pbc_pos = np.add(pbc_pos, sc_lat_vec[2,:])
+                                    elif z_cell==partitions-1 and cell[2]==0:
+                                        pbc_pos = np.subtract(pbc_pos, sc_lat_vec[2,:])
+                                    diff_vec = np.subtract(trans_pos, pbc_pos)
+                                    diff_len = math.sqrt(diff_vec[0]**2 + diff_vec[1]**2 + diff_vec[2]**2)
+                                    if diff_len < cutoff_dist:
+                                        too_close = True
+                                        shift_vec = np.add(shift_vec, diff_vec)
+                    tmp_ion_storage[sol_ion,:] = trans_pos
+                    ind += 1
+                shift_len = math.sqrt(shift_vec[0]**2+shift_vec[1]**2+shift_vec[2]**2)
+                if not np.isclose(shift_len,0):
+                    shift_sc = cutoff_dist/shift_len
+                    shift_vec = np.multiply(shift_vec, shift_sc)
+                    trans_array = np.add(trans_array, shift_vec)
+                if np.less(trans_array[0],trans_lim_lower[0]) or np.greater(trans_array[0],trans_lim_upper[0]):
+                    out_of_bounds = True
+                if np.less(trans_array[1],trans_lim_lower[1]) or np.greater(trans_array[1],trans_lim_upper[1]):
+                    out_of_bounds = True
+                if np.less(trans_array[2],trans_lim_lower[2]) or np.greater(trans_array[2],trans_lim_upper[2]):
+                    out_of_bounds = True
         for i in range(sol_num_ions):
             sep_sol_pos[ind-sol_num_ions+i,:] = np.divide(tmp_ion_storage[i,:], sc_fac)
             atoms_in_mini_cell[cell[0]][cell[1]][cell[2]].append(np.array(tmp_ion_storage[i,:]))

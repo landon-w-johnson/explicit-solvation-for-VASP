@@ -32,8 +32,6 @@
 
 1. Your `POSCAR` file must have a blank line after the ion positions.
 
-1. It's scootin' the molecules too far with the collision detection.
-
 
 
 
