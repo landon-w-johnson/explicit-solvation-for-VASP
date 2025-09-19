@@ -317,6 +317,34 @@ else: # Cartesian
                 break
         use_cell[x_cell,y_cell,z_cell] = False
         atoms_in_mini_cell[x_cell][y_cell][z_cell].append(np.array(car_ion_pos[ion,:], dtype=np.double))
+print('use_cell before checking neighbors:')
+print(use_cell)
+print()
+excluding_neighbors = True
+num_iterations = 0
+while excluding_neighbors:
+    num_iterations += 1
+    excluding_neighbors = False
+    for x_cell in range(partitions):
+        for y_cell in range(partitions):
+            for z_cell in range(partitions):
+                if use_cell[x_cell,y_cell,z_cell]:
+                    num_excluded_neighbors = 0
+                    for near_x in [(x_cell-1)%partitions,x_cell,(x_cell+1)%partitions]:
+                        for near_y in [(y_cell-1)%partitions,y_cell,(y_cell+1)%partitions]:
+                            for near_z in [(z_cell-1)%partitions,z_cell,(z_cell+1)%partitions]:
+                                if near_x != x_cell or near_y != y_cell or near_z != z_cell:
+                                    if not use_cell[near_x,near_y,near_z]:
+                                        num_excluded_neighbors += 1
+                                        if num_excluded_neighbors >= 17:
+                                            use_cell[x_cell,y_cell,z_cell] = False
+                                            excluding_neighbors = True
+print('use_cell after checking neighbors:')
+print(use_cell)
+print()
+print(f'num_iterations = {num_iterations}')
+print()
+                            
 
 num_usable_mini_cells = 0
 avail_cells = []
