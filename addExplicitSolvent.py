@@ -613,13 +613,13 @@ if sel_dyn:
         x = new_sol_pos[sol_ion,0]
         y = new_sol_pos[sol_ion,1]
         z = new_sol_pos[sol_ion,2]
-        new_poscar.write(f'  {x:.16f}  {y:.16f}  {z:.17f}   T   T   T\n')
+        new_poscar.write(f'  {x:.16f}  {y:.16f}  {z:.16f}   T   T   T\n')
 else:
     for sol_ion in range(len(new_sol_pos)):
         x = new_sol_pos[sol_ion,0]
         y = new_sol_pos[sol_ion,1]
         z = new_sol_pos[sol_ion,2]
-        new_poscar.write(f'  {x:.16f}  {y:.16f}  {z:.17f}\n')
+        new_poscar.write(f'  {x:.16f}  {y:.16f}  {z:.16f}\n')
 new_poscar.close()
 
 
