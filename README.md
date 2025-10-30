@@ -1,6 +1,6 @@
 # What Does This Do?
 
-This script adds explicit solvent molecules to `POSCAR` files. It does so at a user-specified density, or at least as close as it can get to that density. The solvent molecules are placed randomly in a way that should be locally disordered and globally "homogenous." The orientation of each solvent molecule is randomized. The resulting output file, `POSCAR_WITH_SOLVENT`, will be ready for VASP if all goes well.
+This script adds explicit solvent molecules to `POSCAR` files. It does so at a user-specified density, or at least as close as it can get to that density. The solvent molecules are placed randomly in a way that should be locally disordered and globally "homogeneous." The orientation of each solvent molecule is randomized. The resulting output file, `POSCAR_WITH_SOLVENT`, will be ready for VASP if all goes well.
 
 
 
