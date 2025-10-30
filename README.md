@@ -26,11 +26,13 @@
 
 # Known Bugs
 
+1. Your `POSCAR` file **must** include the "species names" line. [Here's the relevant wiki page](https://www.vasp.at/wiki/POSCAR)
+
+1. Your `POSCAR` and `SOLVENT` files **cannot** have any blank lines in the header (anything above the ion positions).
+
+1. Your `POSCAR` file **must** have a blank line after the ion positions.
+
 1. This will not work if your solvent molecule spans across the periodic boundaries in the file `SOLVENT`.
-
-1. Your `POSCAR` and `SOLVENT` files cannot have any blank lines in the header (anything above the ion positions).
-
-1. Your `POSCAR` file must have a blank line after the ion positions.
 
 
 
