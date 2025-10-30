@@ -14,7 +14,7 @@
 
 1. Run `python addExplicitSolvent.py`. The variable `cutoff_dist` at the beginning of the script controls how close solvent atoms can be placed to already existing atoms.
 
-1. While `addExplicitSolvent.py` is running, you will be prompted to enter the density of your solvent in grams per mililiter. It might run for a while without any output. This is fine. If the script gets stuck trying to place one of the solvent molecules, it will print a message letting you know about it every 10,000 failed attempts.
+1. After you start running `addExplicitSolvent.py`, you will be prompted to enter the density of your solvent in grams per mililiter. It might run for a while without any output after you input your desired density. This just means the script is having a hard time placing the solvent molecules without having them collide with already existing atoms. If the script gets stuck trying to place one of the solvent molecules, it will print a message letting you know about it every 10,000 failed attempts. You may need to lower your density or `cutoff_dist` if this consistently prevents the script from finishing.
 
 1. After `addExplicitSolvent.py` is done running, you will have a new file called `POSCAR_WITH_SOLVENT` that contains your original molecule surrounded by randomly oriented solvent molecules at approximately your desired density. This file is ready for VASP once you rename it to `POSCAR` in your VASP working directory.
 
