@@ -8,7 +8,7 @@
 
 # How to Use This
 
-1. Optional: Optimize the geometry of your unsolvated system and use that as your `POSCAR`. It'll be much quicker for VASP do optimize it when it's isolated than when there are a bunch of other solvent molecules in your simulation cell too.
+1. Optional: Optimize the geometry of your unsolvated system and use that as your `POSCAR`. It'll be much quicker for VASP to optimize it when it's isolated than when there are a bunch of other solvent molecules in your simulation cell too.
 
 1. Put your unsolvated `POSCAR` file in your working directory (whichever directory has `addExplicitSolvent.py`).
 
