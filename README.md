@@ -12,15 +12,15 @@
 
 1. Put your unsolvated `POSCAR` file in your working directory (whichever directory has `addExplicitSolvent.py`).
 
-1. Put a `POSCAR` of your desired solvent molecule in your working directory with the name `SOLVENT` (watch out for Windows automatically adding the `.txt` extension). Some samples are included in the `solvents` directory.
+1. Put a `POSCAR` of your desired solvent molecule in your working directory with the name `SOLVENT` (watch out for Windows automatically adding a `.txt` extension). The samples solvent molecules included in the `solvents` directory have already been optimizied.
 
-1. Run `python addExplicitSolvent.py`. The variable `cutoff_dist` at the beginning of the script controls how close solvent atoms can be placed to already existing atoms.
+1. Run `addExplicitSolvent.py`. The variable `cutoff_dist` at the beginning of the script controls how close solvent atoms can be placed to already existing atoms.
 
 1. After you start running `addExplicitSolvent.py`, you will be prompted to enter the density of your solvent in grams per mililiter. It might run for a while without any output at this point. This just means the script is having a hard time placing the solvent molecules without having them collide with already existing atoms. If the script gets stuck trying to place one of the solvent molecules, it will print a message letting you know about it every 10,000 failed attempts. You may need to lower your density or `cutoff_dist` if this consistently prevents the script from finishing.
 
 1. After `addExplicitSolvent.py` is done running, you will have a new file called `POSCAR_WITH_SOLVENT` that contains your original molecule surrounded by randomly oriented solvent molecules at approximately your desired density. This file is ready for VASP once you rename it to `POSCAR` in your VASP working directory.
 
-1. Append the appropriate elemental species to your `POTCAR` based on the order that they appear in `POSCAR_WITH_SOLVENT`.
+1. Append the appropriate elemental species of your newly included solvent molecules to your `POTCAR` based on the order that they appear in `POSCAR_WITH_SOLVENT`.
 
 
 
