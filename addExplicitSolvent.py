@@ -10,10 +10,10 @@ import random
 ########### You MUST have 1 < excluded_neighbors_cutoff < 27 ###########
 ########################################################################
 ###### If solvent molecules are being placed within atomic cages: ######
-######              Turn excluded_neighbors_cutoff up             ######
+######             Turn excluded_neighbors_cutoff down            ######
 ########################################################################
 ####### If solvent molecules aren't being placed within cavities: ######
-#######            Turn excluded_neighbors_cutoff down            ######
+#######             Turn excluded_neighbors_cutoff up             ######
 ########################################################################
 
 cutoff_dist = 2 # Angstroms
